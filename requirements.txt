@@ -1,3 +1,2 @@
 SQLAlchemy==2.0.3
 xmltodict==0.13.0
-Pillow==9.5.0
