@@ -3,6 +3,13 @@ import os
 import tkinter as tk
 from tkinter import ttk
 
+try:
+    from PIL import Image, ImageDraw
+    from PIL.ImageTk import PhotoImage
+    _HAS_PIL = True
+except ImportError:
+    _HAS_PIL = False
+
 from views.config import DialogCfg
 from views.link import DialogLink
 from views.group import DialogGroup
@@ -16,6 +23,37 @@ from libs import message
 def _get_icon_path():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(root, "icon.ico")
+
+
+def _create_folder_closed_icon(size=16):
+    """创建关闭的文件夹图标，透明背景以适配选中行"""
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([2, 4, size - 2, size - 2], fill='#FFB84D', outline='#E69500')
+    draw.polygon([2, 4, 5, 4, 8, 1, size - 2, 1, size - 2, 4], fill='#FFD966', outline='#E69500')
+    return img
+
+
+def _create_folder_open_icon(size=16):
+    """创建打开的文件夹图标，透明背景以适配选中行"""
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([2, 5, size - 2, size - 2], fill='#FFB84D', outline='#E69500')
+    draw.polygon([2, 5, 2, 2, 8, 2, 12, 5], fill='#FFD966', outline='#E69500')
+    draw.polygon([size - 2, 5, size - 2, 2, size - 8, 2, size - 12, 5], fill='#FFD966', outline='#E69500')
+    return img
+
+
+def _create_link_icon(size=16):
+    """创建连接图标：插头造型，透明背景以适配选中行"""
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    # 插头主体：圆角矩形
+    draw.rounded_rectangle([3, 2, size - 3, size - 6], radius=2, fill='#81C784', outline='#4CAF50')
+    # 两个插脚
+    draw.rectangle([5, size - 6, 7, size - 2], fill='#4CAF50', outline='#4CAF50')
+    draw.rectangle([size - 7, size - 6, size - 5, size - 2], fill='#4CAF50', outline='#4CAF50')
+    return img
 
 
 class Main(tk.Tk):
@@ -65,6 +103,10 @@ class Main(tk.Tk):
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(0, weight=1)
 
+        # 文件夹开合图标
+        style = ttk.Style()
+        style.configure('.', indicatorsize=0)
+
         columns = ('desc', 'id', 'type')
         self.treeView = ttk.Treeview(main_frame, columns=columns, height=25, selectmode='browse', show='tree headings')
         self.treeView.heading('#0', text='连接')
@@ -78,6 +120,15 @@ class Main(tk.Tk):
         self.treeView.column('type', width=0, minwidth=0, stretch=False)
 
         self.treeView.grid(row=0, column=0, sticky=tk.NSEW)
+
+        # 创建并配置树形图标 (透明背景，选中时与行背景融为一体)
+        self._tree_icons = []
+        if _HAS_PIL:
+            for img in (_create_folder_closed_icon(), _create_folder_open_icon(), _create_link_icon()):
+                self._tree_icons.append(PhotoImage(img))
+            self.treeView.tag_configure('folder-closed', image=self._tree_icons[0])
+            self.treeView.tag_configure('folder-open', image=self._tree_icons[1])
+            self.treeView.tag_configure('link', image=self._tree_icons[2])
 
         self.treeView.bind('<Double-1>', lambda e: self.logon_on())
         self.treeView.bind('<Return>', lambda e: self.logon_on())
@@ -105,9 +156,10 @@ class Main(tk.Tk):
                 Node.type == 'L', Node.group == '').all()
             for folder in childs_f:
                 iid = str(folder.uuid)
+                folder_tag = 'folder-open' if folder.expanded else 'folder-closed'
                 self.treeView.insert(parent_iid, 'end', iid=iid, text=folder.node,
                                     values=(folder.desc, str(folder.uuid), folder.type),
-                                    tags=('folder',))
+                                    tags=(folder_tag,))
                 if folder.expanded:
                     self.treeView.item(iid, open=True)
                 self.set_node(iid, folder)
@@ -123,9 +175,10 @@ class Main(tk.Tk):
                 Node.type == 'L', Node.puuid == info.uuid).all()
             for folder in childs_f:
                 iid = str(folder.uuid)
+                folder_tag = 'folder-open' if folder.expanded else 'folder-closed'
                 self.treeView.insert(parent_iid, 'end', iid=iid, text=folder.node,
                                     values=(folder.desc, str(folder.uuid), folder.type),
-                                    tags=('folder',))
+                                    tags=(folder_tag,))
                 if folder.expanded:
                     self.treeView.item(iid, open=True)
                 self.set_node(iid, folder)
@@ -137,30 +190,40 @@ class Main(tk.Tk):
 
     def _context_menu(self, event):
         item = self.treeView.identify_row(event.y)
-        if not item:
-            return
-        self.treeView.selection_set(item)
-        self.treeView.focus(item)
+        
+        # 清除当前选择，确保在空白处右键时不会影响之前的选中项
+        self.treeView.selection_set('')
+        self.treeView.focus('')
+        
+        if item:
+            # 如果点击的是某个项目，则设置该项目为选中状态
+            self.treeView.selection_set(item)
+            self.treeView.focus(item)
+            
+            values = self.treeView.item(item, 'values')
+            nodetype = values[2] if values else ''
 
-        values = self.treeView.item(item, 'values')
-        nodetype = values[2] if values else ''
-
-        menu = tk.Menu(self, tearoff=0)
-        if nodetype == 'L':
-            menu.add_command(label='登录', command=self.logon_on)
-            menu.add_separator()
-            menu.add_command(label='删除', command=self.delete)
-            menu.add_separator()
-            menu.add_command(label='属性', command=self.attribute)
-        else:
-            menu.add_command(label='添加新连接', command=self.add_link)
-            menu.add_separator()
-            menu.add_command(label='添加分组', command=self.add_group)
-            if nodetype == 'F':
+            menu = tk.Menu(self, tearoff=0)
+            if nodetype == 'L':
+                menu.add_command(label='登录', command=self.logon_on)
                 menu.add_separator()
                 menu.add_command(label='删除', command=self.delete)
                 menu.add_separator()
                 menu.add_command(label='属性', command=self.attribute)
+            else:
+                menu.add_command(label='添加新连接', command=self.add_link)
+                menu.add_separator()
+                menu.add_command(label='添加分组', command=self.add_group)
+                if nodetype == 'F':
+                    menu.add_separator()
+                    menu.add_command(label='删除', command=self.delete)
+                    menu.add_separator()
+                    menu.add_command(label='属性', command=self.attribute)
+        else:
+            # 在空白区域右键，提供添加分组和添加新连接的选项
+            menu = tk.Menu(self, tearoff=0)
+            # menu.add_separator()
+            menu.add_command(label='添加分组', command=self.add_group)
 
         menu.tk_popup(event.x_root, event.y_root)
 
@@ -325,7 +388,24 @@ class Main(tk.Tk):
 
             iid = str(uuid)
             self.treeView.insert('', 'end', iid=iid, text=data['node'],
-                                values=(data['desc'], str(uuid), 'F'), tags=('folder',))
+                                values=(data['desc'], str(uuid), 'F'), tags=('folder-closed',))
+
+    def add_group_empty(self):
+        """在空白区域右键添加分组"""
+        param = {'type': 'add'}
+        dialog = DialogGroup(self, param)
+        code = dialog.result['code']
+        data = dialog.result['data']
+        if code == 'ok':
+            uuid = PUUID.uuid1()
+            nodes = [Node(node=data['node'], desc=data['desc'], group='',
+                         type='F', position=0, uuid=uuid)]
+            self.db.session.add_all(nodes)
+            self.db.session.commit()
+
+            iid = str(uuid)
+            self.treeView.insert('', 'end', iid=iid, text=data['node'],
+                                values=(data['desc'], str(uuid), 'F'), tags=('folder-closed',))
 
     def delete(self):
         sel = self.treeView.selection()
@@ -372,8 +452,9 @@ class Main(tk.Tk):
         if not item:
             return
         values = self.treeView.item(item, 'values')
-        if not values:
+        if not values or values[2] != 'F':
             return
+        self.treeView.item(item, tags=('folder-open',))
         cur_uuid = values[1]
         db_group = self.db.session.query(Node).filter(Node.uuid == PUUID.UUID(cur_uuid)).first()
         if db_group:
@@ -387,8 +468,9 @@ class Main(tk.Tk):
         if not item:
             return
         values = self.treeView.item(item, 'values')
-        if not values:
+        if not values or values[2] != 'F':
             return
+        self.treeView.item(item, tags=('folder-closed',))
         cur_uuid = values[1]
         db_group = self.db.session.query(Node).filter(Node.uuid == PUUID.UUID(cur_uuid)).first()
         if db_group:

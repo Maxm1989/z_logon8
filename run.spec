@@ -1,12 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 block_cipher = None
-
 
 a = Analysis(
     ['run.py'],
-    pathex=['D:\code\python\z_logon8'],
+    pathex=['.'],
     binaries=[],
     datas=[('icon.ico', '.')],
     hiddenimports=[],
@@ -38,7 +36,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch='x86_64',
     codesign_identity=None,
     entitlements_file=None,
     icon=['icon.ico'],
