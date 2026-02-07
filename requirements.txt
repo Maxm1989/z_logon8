@@ -1,0 +1,7 @@
+click             ==7.1.2
+greenlet          ==2.0.2
+python-dotenv     ==0.21.1
+setuptools        ==67.3.2
+SQLAlchemy        ==2.0.3
+typing_extensions ==4.5.0
+xmltodict         ==0.13.0
