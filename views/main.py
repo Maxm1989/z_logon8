@@ -121,43 +121,46 @@ class Main(tk.Tk):
             self.treeView.delete(item)
 
     def set_node(self, parent_iid, info=None):
+        # 获取当前父节点下的文件夹和链接，然后合并排序再插入
         if info is None:
-            childs_f = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'F', Node.puuid == None).all()
-            childs_l = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'L', Node.puuid == None).all()
-            for folder in childs_f:
-                iid = str(folder.uuid)
-                folder_tag = 'folder-open' if folder.expanded else 'folder-closed'
-                self.treeView.insert(parent_iid, 'end', iid=iid, text=folder.node,
-                                    values=(folder.desc, str(folder.uuid), folder.type),
-                                    tags=(folder_tag,))
-                if folder.expanded:
-                    self.treeView.item(iid, open=True)
-                self.set_node(iid, folder)
-            for link in childs_l:
-                iid = str(link.uuid)
-                self.treeView.insert(parent_iid, 'end', iid=iid, text=link.node,
-                                    values=(link.desc, str(link.uuid), link.type),
-                                    tags=('link',))
+            parent_filter = None
         else:
-            childs_f = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'F', Node.puuid == info.uuid).all()
-            childs_l = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'L', Node.puuid == info.uuid).all()
-            for folder in childs_f:
-                iid = str(folder.uuid)
-                folder_tag = 'folder-open' if folder.expanded else 'folder-closed'
-                self.treeView.insert(parent_iid, 'end', iid=iid, text=folder.node,
-                                    values=(folder.desc, str(folder.uuid), folder.type),
+            parent_filter = info.uuid
+
+        childs_f = self.db.session.query(Node).filter(
+            Node.type == 'F', Node.puuid == parent_filter).all()
+        childs_l = self.db.session.query(Node).filter(
+            Node.type == 'L', Node.puuid == parent_filter).all()
+
+        items = []
+        for f in childs_f:
+            items.append({'type': 'F', 'node': f.node, 'desc': f.desc, 'uuid': f.uuid, 'expanded': f.expanded})
+        for l in childs_l:
+            items.append({'type': 'L', 'node': l.node, 'desc': l.desc, 'uuid': l.uuid})
+
+        # 文件夹优先，随后按名称忽略大小写排序
+        items.sort(key=lambda x: (0 if x['type'] == 'F' else 1, x['node'].lower()))
+
+        for it in items:
+            iid = str(it['uuid'])
+            if it['type'] == 'F':
+                # 启动时（self.init 为 True）强制展开，避免默认折叠
+                expanded_flag = it.get('expanded') or getattr(self, 'init', False)
+                folder_tag = 'folder-open' if expanded_flag else 'folder-closed'
+                self.treeView.insert(parent_iid, 'end', iid=iid, text=it['node'],
+                                    values=(it.get('desc', ''), str(it['uuid']), 'F'),
                                     tags=(folder_tag,))
-                if folder.expanded:
+                if expanded_flag:
                     self.treeView.item(iid, open=True)
-                self.set_node(iid, folder)
-            for link in childs_l:
-                iid = str(link.uuid)
-                self.treeView.insert(parent_iid, 'end', iid=iid, text=link.node,
-                                    values=(link.desc, str(link.uuid), link.type),
+                # 递归渲染子节点
+                try:
+                    child_node = self.db.session.query(Node).filter(Node.uuid == it['uuid']).first()
+                except Exception:
+                    child_node = None
+                self.set_node(iid, child_node)
+            else:
+                self.treeView.insert(parent_iid, 'end', iid=iid, text=it['node'],
+                                    values=(it.get('desc', ''), str(it['uuid']), 'L'),
                                     tags=('link',))
 
     def _context_menu(self, event):
