@@ -1,18 +1,13 @@
 import tkinter as tk
 from tkinter import messagebox
-import os
-
-
-def _get_icon_path():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "icon.ico")
+from libs.gui_util import get_icon_path
 
 
 def _setup_icon():
     try:
         root = tk._default_root
         if root and root.winfo_exists():
-            root.iconbitmap(_get_icon_path())
+            root.iconbitmap(get_icon_path())
     except (tk.TclError, AttributeError):
         pass
 

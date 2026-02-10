@@ -1,16 +1,10 @@
-import os
 import tkinter as tk
 from tkinter import ttk
 
 from libs.guiCfg import GuiCfg
-from libs.gui_util import center_window
+from libs.gui_util import center_window, get_icon_path
 from libs.OptionDB import sqliteDB
 from libs import message
-
-
-def _get_icon_path():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "icon.ico")
 
 
 class DialogGroup(tk.Toplevel):
@@ -45,7 +39,7 @@ class DialogGroup(tk.Toplevel):
         self.resizable(False, False)
 
         try:
-            self.iconbitmap(_get_icon_path())
+            self.iconbitmap(get_icon_path())
         except tk.TclError:
             pass
 

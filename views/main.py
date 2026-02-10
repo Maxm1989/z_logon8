@@ -1,123 +1,17 @@
 import uuid as PUUID
-import os
+import subprocess
 import tkinter as tk
 from tkinter import ttk
-from tkinter import Canvas
-
-_HAS_PIL = False
 
 from views.config import DialogCfg
 from views.link import DialogLink
 from views.group import DialogGroup
 from libs.Model import Node, Link, Config
 from libs.guiCfg import GuiCfg
-from libs.gui_util import center_window
+from libs.gui_util import center_window, get_icon_path
 from libs.OptionDB import sqliteDB
+from libs.icon_drawing import create_folder_closed_icon, create_folder_open_icon, create_link_icon
 from libs import message
-
-
-def _get_icon_path():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "icon.ico")
-
-
-def _create_folder_closed_icon(size=16):
-    """创建关闭的文件夹图标，返回PhotoImage对象"""
-    img = tk.PhotoImage(width=size, height=size)
-    
-    # 绘制文件夹身体
-    for x in range(2, size-2):
-        for y in range(4, size-2):
-            img.put("#FFB84D", (x, y))  # 橙黄色
-    
-    # 绘制边框
-    for x in range(2, size-2):
-        img.put("#E69500", (x, 4))  # 上边框
-        img.put("#E69500", (x, size-3))  # 下边框
-    for y in range(4, size-2):
-        img.put("#E69500", (2, y))  # 左边框
-        img.put("#E69500", (size-3, y))  # 右边框
-    
-    # 绘制顶部标签
-    for x in range(2, size-2):
-        for y in range(1, 4):
-            if y == 1:  # 顶部线
-                img.put("#E69500", (x, y))
-            elif y == 2:  # 中间填充
-                img.put("#FFD966", (x, y))
-            elif y == 3 and (x <= 5 or x >= size-5):  # 两边竖线
-                img.put("#E69500", (x, y))
-    
-    return img
-
-
-def _create_folder_open_icon(size=16):
-    """创建打开的文件夹图标，返回PhotoImage对象"""
-    img = tk.PhotoImage(width=size, height=size)
-    
-    # 绘制文件夹身体
-    for x in range(2, size-2):
-        for y in range(5, size-2):
-            img.put("#FFB84D", (x, y))
-    
-    # 绘制边框
-    for x in range(2, size-2):
-        img.put("#E69500", (x, 5))  # 上边框
-        img.put("#E69500", (x, size-3))  # 下边框
-    for y in range(5, size-2):
-        img.put("#E69500", (2, y))  # 左边框
-        img.put("#E69500", (size-3, y))  # 右边框
-    
-    # 绘制打开的标签部分
-    # 左侧标签
-    for x in range(2, 8):
-        for y in range(2, 5):
-            if y == 2:  # 顶部线
-                img.put("#E69500", (x, y))
-            elif y == 3:  # 中间填充
-                img.put("#FFD966", (x, y))
-            elif y == 4 and (x == 2 or x == 7):  # 两边竖线
-                img.put("#E69500", (x, y))
-    
-    # 右侧标签
-    for x in range(size-8, size-2):
-        for y in range(2, 5):
-            if y == 2:  # 顶部线
-                img.put("#E69500", (x, y))
-            elif y == 3:  # 中间填充
-                img.put("#FFD966", (x, y))
-            elif y == 4 and (x == size-8 or x == size-3):  # 两边竖线
-                img.put("#E69500", (x, y))
-    
-    return img
-
-
-def _create_link_icon(size=16):
-    """创建连接图标：插头造型，返回PhotoImage对象"""
-    img = tk.PhotoImage(width=size, height=size)
-    
-    # 绘制插头主体（矩形）
-    for x in range(3, size-3):
-        for y in range(2, size-6):
-            img.put("#81C784", (x, y))  # 浅绿色
-    
-    # 绘制插头边框
-    for x in range(3, size-3):
-        img.put("#4CAF50", (x, 2))  # 上边框
-        img.put("#4CAF50", (x, size-7))  # 下边框
-    for y in range(2, size-6):
-        img.put("#4CAF50", (3, y))  # 左边框
-        img.put("#4CAF50", (size-4, y))  # 右边框
-    
-    # 绘制两个插脚
-    for x in range(5, 7):
-        for y in range(size-6, size-2):
-            img.put("#4CAF50", (x, y))  # 左插脚
-    for x in range(size-7, size-5):
-        for y in range(size-6, size-2):
-            img.put("#4CAF50", (x, y))  # 右插脚
-    
-    return img
 
 
 class Main(tk.Tk):
@@ -145,7 +39,7 @@ class Main(tk.Tk):
         self.resizable(False, False)
 
         try:
-            self.iconbitmap(_get_icon_path())
+            self.iconbitmap(get_icon_path())
         except tk.TclError:
             pass
 
@@ -191,7 +85,7 @@ class Main(tk.Tk):
         # 创建并配置树形图标 (透明背景，选中时与行背景融为一体)
         self._tree_icons = []
         # 即使没有PIL也创建图标
-        for img in (_create_folder_closed_icon(), _create_folder_open_icon(), _create_link_icon()):
+        for img in (create_folder_closed_icon(), create_folder_open_icon(), create_link_icon()):
             self._tree_icons.append(img)
         self.treeView.tag_configure('folder-closed', image=self._tree_icons[0])
         self.treeView.tag_configure('folder-open', image=self._tree_icons[1])
@@ -306,8 +200,6 @@ class Main(tk.Tk):
         menu.tk_popup(event.x_root, event.y_root)
 
     def logon_on(self):
-        import subprocess
-
         sel = self.treeView.selection()
         if not sel:
             return
@@ -453,23 +345,6 @@ class Main(tk.Tk):
                 self.db.session.commit()
 
     def add_group(self):
-        param = {'type': 'add'}
-        dialog = DialogGroup(self, param)
-        code = dialog.result['code']
-        data = dialog.result['data']
-        if code == 'ok':
-            uuid = PUUID.uuid1()
-            nodes = [Node(node=data['node'], desc=data['desc'], group='',
-                         type='F', position=0, uuid=uuid)]
-            self.db.session.add_all(nodes)
-            self.db.session.commit()
-
-            iid = str(uuid)
-            self.treeView.insert('', 'end', iid=iid, text=data['node'],
-                                values=(data['desc'], str(uuid), 'F'), tags=('folder-closed',))
-
-    def add_group_empty(self):
-        """在空白区域右键添加分组"""
         param = {'type': 'add'}
         dialog = DialogGroup(self, param)
         code = dialog.result['code']

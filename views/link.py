@@ -1,18 +1,13 @@
 import uuid as PUUID
-import os
 import tkinter as tk
 from tkinter import ttk
 
 from libs.Model import Node
 from libs.guiCfg import GuiCfg
-from libs.gui_util import center_window
+from libs.gui_util import center_window, get_icon_path
 from libs.OptionDB import sqliteDB
+from libs.icon_drawing import draw_eye_icon
 from libs import message
-
-
-def _get_icon_path():
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "icon.ico")
 
 
 class DialogLink(tk.Toplevel):
@@ -47,7 +42,7 @@ class DialogLink(tk.Toplevel):
         self.resizable(False, False)
 
         try:
-            self.iconbitmap(_get_icon_path())
+            self.iconbitmap(get_icon_path())
         except tk.TclError:
             pass
 
@@ -130,7 +125,7 @@ class DialogLink(tk.Toplevel):
         eye_canvas.pack(side=tk.RIGHT, padx=(5, 0))
         
         # 绘制眼睛图标
-        self._draw_eye_icon(eye_canvas, closed=False)
+        draw_eye_icon(eye_canvas, closed=False)
         
         # 存储状态变量
         self._pw_visible = tk.BooleanVar(value=False)
@@ -144,27 +139,6 @@ class DialogLink(tk.Toplevel):
         entry.container = container
         return entry
 
-    def _draw_eye_icon(self, canvas, closed=False):
-        # 清除画布
-        canvas.delete("all")
-        
-        if closed:
-            # 密码隐藏状态 - 画一个闭合的眼睛
-            # 眼睛外轮廓 - 使用更圆润的椭圆，高度进一步调高
-            canvas.create_oval(3, 5, 17, 15, outline='#4A90E2', width=1.5)
-            # 内部弧形
-            canvas.create_oval(6, 7, 14, 13, outline='#7FBCEB', width=1)
-            # 斜杠，使用深灰色更接近黑色
-            canvas.create_line(16, 6, 4, 14, fill='#666666', width=1.8, capstyle=tk.ROUND)
-        else:
-            # 密码可见状态 - 画一个睁开的眼睛
-            # 眼睛外轮廓 - 使用更圆润的椭圆，高度进一步调高
-            canvas.create_oval(3, 5, 17, 15, outline='#4A90E2', width=1.5)
-            # 眼珠 - 使用深蓝色
-            canvas.create_oval(8, 7, 12, 13, fill='#2C6FC8', outline='#2C6FC8')
-            # 反光点
-            canvas.create_oval(9, 8, 10, 9, fill='white', outline='white')
-
     def _toggle_pw_visible_from_icon(self, event=None):
         # 切换密码可见性
         current = self._pw_visible.get()
@@ -172,7 +146,7 @@ class DialogLink(tk.Toplevel):
         self._pw_entry.configure(show='' if not current else '*')
         
         # 更新眼睛图标 - 注意：参数应该是新状态，即not current
-        self._draw_eye_icon(self._eye_canvas, closed=not current)
+        draw_eye_icon(self._eye_canvas, closed=not current)
 
     def _toggle_pw_visible(self):
         # 保持原有的切换方法兼容性
@@ -180,7 +154,7 @@ class DialogLink(tk.Toplevel):
         self._pw_entry.configure(show='' if not current else '*')
         
         # 更新眼睛图标 - 注意：参数应该是新状态，即not current
-        self._draw_eye_icon(self._eye_canvas, closed=not current)
+        draw_eye_icon(self._eye_canvas, closed=not current)
 
     def init_data(self):
         for item in self.guiCfg.getSapGuiLogonConfig():
