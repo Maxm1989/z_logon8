@@ -110,6 +110,13 @@ class DialogLink(tk.Toplevel):
         ttk.Button(btn_frame, text='确定', command=self.accept).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text='取消', command=self.reject).pack(side=tk.LEFT)
 
+        # 绑定事件监听器，追踪字段变化
+        for w in [self.LineEditLink, self.LineEditDesc, self.LineEditClient, self.LineEditUser, self.LineEditPassword]:
+            w.bind('<KeyRelease>', lambda e: self.on_changed())
+        self.comboBoxSystem.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
+        self.comboBoxLanguage.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
+        self.comboBoxGroup.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
+
     def _create_password_entry(self, parent):
         # 创建容器框架
         container = ttk.Frame(parent)
@@ -175,12 +182,6 @@ class DialogLink(tk.Toplevel):
         # 更新眼睛图标 - 注意：参数应该是新状态，即not current
         self._draw_eye_icon(self._eye_canvas, closed=not current)
 
-        for w in [self.LineEditLink, self.LineEditDesc, self.LineEditClient, self.LineEditUser, self.LineEditPassword]:
-            w.bind('<KeyRelease>', lambda e: self.on_changed())
-        self.comboBoxSystem.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
-        self.comboBoxLanguage.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
-        self.comboBoxGroup.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
-
     def init_data(self):
         for item in self.guiCfg.getSapGuiLogonConfig():
             self.comboBoxSystem['values'] = list(self.comboBoxSystem['values']) + [item.get('system')]
@@ -216,7 +217,10 @@ class DialogLink(tk.Toplevel):
         self.changed = True
 
     def accept(self):
-        if self.changed:
+        # 对于新增连接，或者确实有改动的情况，才执行保存
+        should_save = (self.data.get('type') == 'add') or self.changed
+        
+        if should_save:
             group_text = self.comboBoxGroup.get()
             puuid = self._group_data.get(group_text, '')
 

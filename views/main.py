@@ -25,11 +25,6 @@ def _create_folder_closed_icon(size=16):
     """创建关闭的文件夹图标，返回PhotoImage对象"""
     img = tk.PhotoImage(width=size, height=size)
     
-    # 设置透明背景
-    for x in range(size):
-        for y in range(size):
-            img.put("#%02x%02x%02x" % (255, 255, 255), (x, y))  # 白色背景
-    
     # 绘制文件夹身体
     for x in range(2, size-2):
         for y in range(4, size-2):
@@ -59,11 +54,6 @@ def _create_folder_closed_icon(size=16):
 def _create_folder_open_icon(size=16):
     """创建打开的文件夹图标，返回PhotoImage对象"""
     img = tk.PhotoImage(width=size, height=size)
-    
-    # 设置透明背景
-    for x in range(size):
-        for y in range(size):
-            img.put("#%02x%02x%02x" % (255, 255, 255), (x, y))  # 白色背景
     
     # 绘制文件夹身体
     for x in range(2, size-2):
@@ -106,11 +96,6 @@ def _create_link_icon(size=16):
     """创建连接图标：插头造型，返回PhotoImage对象"""
     img = tk.PhotoImage(width=size, height=size)
     
-    # 设置透明背景
-    for x in range(size):
-        for y in range(size):
-            img.put("#%02x%02x%02x" % (255, 255, 255), (x, y))  # 白色背景
-    
     # 绘制插头主体（矩形）
     for x in range(3, size-3):
         for y in range(2, size-6):
@@ -149,6 +134,9 @@ class Main(tk.Tk):
         self._setup_ui()
         self.set_tree()
         self.init = False
+        # 确保主窗口获得焦点
+        self.focus_force()
+        self.treeView.focus_set()
 
     def _setup_ui(self):
         self.withdraw()
@@ -222,6 +210,17 @@ class Main(tk.Tk):
     def set_tree(self):
         self._clear_tree()
         self.set_node('')
+        # 默认选择第一个项目并设置焦点
+        self.after(50, self._select_first_item)
+
+    def _select_first_item(self):
+        """延迟选择第一个项目，确保树形控件已完全初始化"""
+        children = self.treeView.get_children()
+        if children:
+            first_item = children[0]
+            self.treeView.selection_set(first_item)
+            self.treeView.focus_set()
+            self.treeView.focus(first_item)
 
     def _clear_tree(self):
         for item in self.treeView.get_children():
@@ -555,3 +554,4 @@ class Main(tk.Tk):
         if db_group:
             db_group.expanded = False
             self.db.session.commit()
+
