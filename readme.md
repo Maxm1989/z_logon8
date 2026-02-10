@@ -2,8 +2,7 @@
 
 ## 打包
 ```shell script
-pyinstaller -wF -i icon.ico run.py --add-data "icon.ico;." --upx-dir D:\code\python\z_logon6\ --clean
-pyinstaller run.spec --upx-dir E:\code\python\pyqt6\ --clean
+pyinstaller -wF -i icon.ico run.py --add-data "icon.ico;." --upx-dir D:\code\python\z_logon8\ --clean
 ```
 
 ## 或者使用下面命令
