@@ -1,39 +1,68 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Uuid, Boolean
-
-Base = declarative_base()
-
-
-class Node(Base):
-    __tablename__ = 'node'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    node = Column(String(30))
-    desc = Column(String(100))
-    group = Column(String(30))
-    type = Column(String(10))
-    position = Column(Integer)
-    uuid = Column(Uuid)
-    puuid = Column(Uuid)
-    expanded = Column(Boolean)
+from dataclasses import dataclass, field, asdict
+from typing import Optional
+from uuid import UUID
 
 
-class Link(Base):
-    __tablename__ = 'link'
+@dataclass
+class Node:
+    """数据库节点表模型"""
+    node: str = ""
+    desc: str = ""
+    group: str = ""
+    type: str = ""  # 'F' for folder, 'L' for link
+    position: int = 0
+    uuid: Optional[UUID] = None
+    puuid: Optional[UUID] = None
+    expanded: bool = False
+    id: Optional[int] = None
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    uuid = Column(Uuid)
-    node = Column(String(30))
-    system = Column(String(30))
-    client = Column(String(3))
-    user = Column(String(20))
-    password = Column(String(30))
-    language = Column(String(2))
+    def __hash__(self):
+        return hash(self.id) if self.id else hash(self.uuid)
+
+    def __eq__(self, other):
+        if not isinstance(other, Node):
+            return False
+        return self.id == other.id if self.id and other.id else self.uuid == other.uuid
 
 
-class Config(Base):
-    __tablename__ = 'config'
+@dataclass
+class Link:
+    """数据库连接表模型"""
+    uuid: Optional[UUID] = None
+    node: str = ""
+    system: str = ""
+    client: str = ""
+    user: str = ""
+    password: str = ""
+    language: str = ""
+    id: Optional[int] = None
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    key = Column(String(30))
-    value = Column(String(50))
+    def __hash__(self):
+        return hash(self.id) if self.id else hash(self.uuid)
+
+    def __eq__(self, other):
+        if not isinstance(other, Link):
+            return False
+        return self.id == other.id if self.id and other.id else self.uuid == other.uuid
+
+
+@dataclass
+class Config:
+    """数据库配置表模型"""
+    key: str = ""
+    value: str = ""
+    id: Optional[int] = None
+
+    def __hash__(self):
+        return hash(self.id) if self.id else hash(self.key)
+
+    def __eq__(self, other):
+        if not isinstance(other, Config):
+            return False
+        return self.key == other.key
+
+
+# 用于兼容SQLAlchemy的Base类（空实现）
+class Base:
+    """用于兼容现有代码"""
+    pass

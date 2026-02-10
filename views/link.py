@@ -196,7 +196,10 @@ class DialogLink(tk.Toplevel):
         
         if should_save:
             group_text = self.comboBoxGroup.get()
-            puuid = self._group_data.get(group_text, '')
+            puuid = self._group_data.get(group_text)
+            if not puuid:
+                message.warning('注意', '请选择有效的组或者组不存在！')
+                return
 
             input_link = {
                 'node': self.LineEditLink.get().strip(),
@@ -230,15 +233,26 @@ class DialogLink(tk.Toplevel):
                     system=input_link['system'], client=input_link['client'])
 
             if input_link['node']:
-                if self.data.get('type') == 'add':
-                    db_link = self.db.session.query(Node).filter(
-                        Node.puuid == PUUID.UUID(input_link.get('puuid')),
-                        Node.node == input_link.get('node')).first()
-                else:
-                    db_link = self.db.session.query(Node).filter(
-                        Node.puuid == PUUID.UUID(input_link.get('puuid')),
-                        Node.node == input_link.get('node'),
-                        Node.uuid != PUUID.UUID(self.data.get('link', {}).get('uuid', ''))).first()
+                # 处理可能为空或无效的 puuid 与现有 uuid，避免 UUID() 抛异常
+                puuid_str = input_link.get('puuid') or None
+                puuid_val = None
+                try:
+                    puuid_val = PUUID.UUID(puuid_str) if puuid_str else None
+                except Exception:
+                    puuid_val = None
+
+                filters = [Node.puuid == puuid_val, Node.node == input_link.get('node')]
+
+                if self.data.get('type') != 'add':
+                    existing_uuid_str = self.data.get('link', {}).get('uuid', '')
+                    try:
+                        existing_uuid_val = PUUID.UUID(existing_uuid_str) if existing_uuid_str else None
+                    except Exception:
+                        existing_uuid_val = None
+                    if existing_uuid_val:
+                        filters.append(Node.uuid != existing_uuid_val)
+
+                db_link = self.db.session.query(Node).filter(*filters).first()
                 if db_link:
                     message.warning('注意', '已存在相同的连接名称，请修改！')
                     return

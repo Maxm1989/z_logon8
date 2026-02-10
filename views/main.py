@@ -123,9 +123,9 @@ class Main(tk.Tk):
     def set_node(self, parent_iid, info=None):
         if info is None:
             childs_f = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'F', Node.group == '').all()
+                Node.type == 'F', Node.puuid == None).all()
             childs_l = self.db.session.query(Node).order_by(Node.node).filter(
-                Node.type == 'L', Node.group == '').all()
+                Node.type == 'L', Node.puuid == None).all()
             for folder in childs_f:
                 iid = str(folder.uuid)
                 folder_tag = 'folder-open' if folder.expanded else 'folder-closed'
@@ -335,7 +335,11 @@ class Main(tk.Tk):
                 db_node.node = data['node']
                 db_node.desc = data['desc']
                 db_node.group = data['group']
-                db_node.puuid = PUUID.UUID(data['puuid'])
+                if data.get('puuid'):
+                    try:
+                        db_node.puuid = PUUID.UUID(data['puuid'])
+                    except (ValueError, TypeError):
+                        pass
                 db_link.node = data['node']
                 db_link.system = data['system']
                 db_link.client = data['client']

@@ -1,5 +1,5 @@
 import json
-import xmltodict
+import xml.etree.ElementTree as ET
 import os
 
 
@@ -11,30 +11,29 @@ class GuiCfg:
 
     def getSapGuiLogonConfig(self):
         pathStr = self.sapGuiCommDir + r'/SAPUILandscape.xml'
-        jsonData = self.getXmlFile2JsonData(pathStr)
-        sysDict = jsonData.get('Landscape').get('Services')
-
-        systems = []
-        for item in sysDict['Service']:
-            dict = {}
-            if item['@type'] == 'SAPGUI':
-                dict['system'] = item['@name']
-                # dict['sysname'] = item['@name']
-                # dict['SYSTEM'] = item['@systemid']
-                systems.append(dict)
-
+        systems = self.parseSapGuiLogonXml(pathStr)
         return sorted(systems, key=lambda x: x["system"], reverse=False)
 
-    def getXmlFile2JsonData(self, filePath):
-        # 获取xml文件 , encoding='utf-8'
-        xmlFile = open(str(filePath), 'r', encoding='utf-8')
-        # 读取xml文件内容
-        xmlDataStr = xmlFile.read()
-        # 将读取的xml内容转为json
-        xmlParse = xmltodict.parse(xmlDataStr)
-        jsonStr = json.dumps(xmlParse, indent=1)
-        jsonData = json.loads(jsonStr)
-        return jsonData
+    def parseSapGuiLogonXml(self, filePath):
+        """使用xml.etree替代xmltodict，减少依赖体积"""
+        try:
+            tree = ET.parse(filePath)
+            root = tree.getroot()
+            systems = []
+            
+            # 查找Services下的所有Service元素
+            services = root.find('.//Services')
+            if services is not None:
+                for service in services.findall('Service'):
+                    if service.get('type') == 'SAPGUI':
+                        systems.append({
+                            'system': service.get('name')
+                        })
+            
+            return systems
+        except Exception as e:
+            print(f"Error parsing XML: {e}")
+            return []
 
     def checkSapGuiDir(self, path=None):
         # def isExist(self, name, path=None):

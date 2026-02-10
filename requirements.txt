@@ -1,2 +1,2 @@
-SQLAlchemy==2.0.3
-xmltodict==0.13.0
+pyinstaller==6.11.1
+PyYAML==6.0
