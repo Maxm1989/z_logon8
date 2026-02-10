@@ -467,14 +467,24 @@ class SessionMock:
 
 class sqliteDB:
     """SQLite数据库管理类，模拟SQLAlchemy接口"""
-    
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(sqliteDB, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
+        # 防止重复初始化（因为实现了单例）
+        if getattr(self, '_initialized', False):
+            return
         self.dbname = 'zlogon.db'
         self.dbpath = GuiCfg().sapGuiCommDir + '/' + self.dbname
         self.base = Base
         self.session = SessionMock(self)
         self._dirty_objects = {}  # 存储直接修改的对象
         self.checkDB()
+        self._initialized = True
     
     def _get_connection(self):
         """获取数据库连接"""

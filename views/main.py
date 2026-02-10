@@ -234,7 +234,7 @@ class Main(tk.Tk):
             SYSTEM = '-SYSTEM='
             CLIENT = '-CLIENT=' + db_link.client
             sysname = '-sysname=' + db_link.system
-            shcut_app = db_cfg_path.value + '/' + GuiCfg().appName
+            shcut_app = db_cfg_path.value + '/' + self.guiCfg.appName
             maxgui = '-max'
 
             try:
