@@ -395,7 +395,7 @@ class Main(tk.Tk):
     def about(self):
         msg = ('👉 一次配置，即可免密登录SAP Logon\n'
                '😈 Bug只是一个未定义的特性...\n\n\n'
-               'V2.26.02.97 Tkinter重构！  By Jimmy Ma')
+               'V2.26.02.10 Tkinter重构！  By Jimmy Ma')
         message.about('关于Z Logon', msg=msg)
 
     def _on_expand(self, event):

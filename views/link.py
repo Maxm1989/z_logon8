@@ -113,16 +113,16 @@ class DialogLink(tk.Toplevel):
         self.comboBoxGroup.bind('<<ComboboxSelected>>', lambda e: self.on_changed())
 
     def _create_password_entry(self, parent):
-        # 创建容器框架
+        # 创建容器框架 - 使用ttk.Frame保持统一样式
         container = ttk.Frame(parent)
         
-        # 创建密码输入框
-        entry = ttk.Entry(container, width=37, show='*')
-        entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        # 创建密码输入框 - 使用ttk.Entry保持样式一致
+        entry = ttk.Entry(container, show='*', width=37)
+        entry.pack(fill=tk.BOTH, expand=True)
         
-        # 创建眼睛图标按钮
-        eye_canvas = tk.Canvas(container, width=20, height=20, highlightthickness=0, relief='flat', bg='#f0f0f0')
-        eye_canvas.pack(side=tk.RIGHT, padx=(5, 0))
+        # 创建眼睛图标按钮 - 使用place放在输入框内部靠右
+        eye_canvas = tk.Canvas(container, width=20, height=20, highlightthickness=0, relief='flat', bg='SystemButtonFace', cursor='hand2')
+        eye_canvas.place(in_=container, relx=1, rely=0.5, anchor='e', x=-4, y=0)
         
         # 绘制眼睛图标
         draw_eye_icon(eye_canvas, closed=False)
