@@ -369,9 +369,16 @@ class SessionMock:
         for obj in objs:
             self._mark_dirty(obj)
     
+    def mark_dirty(self, obj):
+        """标记对象为脏数据（外部使用接口）"""
+        self._mark_dirty(obj)
+    
     def _mark_dirty(self, obj):
         """标记对象为脏数据"""
-        self._dirty_objects.append(obj)
+        # 使用对象id作为key，避免重复添加
+        obj_id = id(obj)
+        if obj_id not in [id(o) for o in self._dirty_objects]:
+            self._dirty_objects.append(obj)
     
     def commit(self):
         """提交更改"""

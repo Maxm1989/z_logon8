@@ -307,6 +307,8 @@ class Main(tk.Tk):
                     Node.uuid == PUUID.UUID(data['uuid'])).first()
                 db_group.node = data['node']
                 db_group.desc = data['desc']
+                # 标记对象为脏数据，确保提交时会被保存
+                self.db.session.mark_dirty(db_group)
                 self.db.session.commit()
                 self.treeView.item(item, text=data['node'], values=(data['desc'], data['uuid'], 'F'))
         else:
@@ -349,6 +351,10 @@ class Main(tk.Tk):
                 db_link.user = data['user']
                 db_link.password = data['password']
                 db_link.language = data['language']
+                
+                # 标记对象为脏数据，确保提交时会被保存
+                self.db.session.mark_dirty(db_node)
+                self.db.session.mark_dirty(db_link)
                 self.db.session.commit()
 
     def add_group(self):
@@ -419,6 +425,8 @@ class Main(tk.Tk):
         db_group = self.db.session.query(Node).filter(Node.uuid == PUUID.UUID(cur_uuid)).first()
         if db_group:
             db_group.expanded = True
+            # 标记对象为脏数据，确保提交时会被保存
+            self.db.session.mark_dirty(db_group)
             self.db.session.commit()
 
     def _on_collapse(self, event):
@@ -435,5 +443,7 @@ class Main(tk.Tk):
         db_group = self.db.session.query(Node).filter(Node.uuid == PUUID.UUID(cur_uuid)).first()
         if db_group:
             db_group.expanded = False
+            # 标记对象为脏数据，确保提交时会被保存
+            self.db.session.mark_dirty(db_group)
             self.db.session.commit()
 
